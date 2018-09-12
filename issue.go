@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/mgo.v2"
 	"github.com/fatih/structs"
 	"github.com/google/go-querystring/query"
 	"github.com/trivago/tgo/tcontainer"
@@ -340,6 +341,19 @@ func (t *Time) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	*t = Time(ti)
+	return nil
+}
+
+func (t Time) GetBSON() (interface{}, error){
+    return time.Time(t),nil
+}
+
+func (it *Time) SetBSON(raw bson.Raw) error {
+	var t time.Time
+	if err := raw.Unmarshal(&t); err != nil {
+		return err
+	}
+	*it = Time(t)
 	return nil
 }
 
