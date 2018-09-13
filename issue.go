@@ -15,6 +15,7 @@ import (
 	"github.com/fatih/structs"
 	"github.com/google/go-querystring/query"
 	"github.com/trivago/tgo/tcontainer"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const (
@@ -102,12 +103,12 @@ type IssueFields struct {
 	Project              Project       `json:"project,omitempty" structs:"project,omitempty"`
 	Resolution           *Resolution   `json:"resolution,omitempty" structs:"resolution,omitempty"`
 	Priority             *Priority     `json:"priority,omitempty" structs:"priority,omitempty"`
-	Resolutiondate       Time          `json:"resolutiondate,omitempty" structs:"resolutiondate,omitempty"`
-	Created              Time          `json:"created,omitempty" structs:"created,omitempty"`
+	Resolutiondate       *Time         `json:"resolutiondate,omitempty" structs:"resolutiondate,omitempty"`
+	Created              *Time         `json:"created,omitempty" structs:"created,omitempty"`
 	Duedate              Date          `json:"duedate,omitempty" structs:"duedate,omitempty"`
 	Watches              *Watches      `json:"watches,omitempty" structs:"watches,omitempty"`
 	Assignee             *User         `json:"assignee,omitempty" structs:"assignee,omitempty"`
-	Updated              Time          `json:"updated,omitempty" structs:"updated,omitempty"`
+	Updated              *Time         `json:"updated,omitempty" structs:"updated,omitempty"`
 	Description          string        `json:"description,omitempty" structs:"description,omitempty"`
 	Summary              string        `json:"summary,omitempty" structs:"summary,omitempty"`
 	Creator              *User         `json:"Creator,omitempty" structs:"Creator,omitempty"`
@@ -340,6 +341,22 @@ func (t *Time) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	*t = Time(ti)
+	return nil
+}
+
+func (t *Time) GetBSON() (interface{}, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return time.Time(*t), nil
+}
+
+func (it *Time) SetBSON(raw bson.Raw) error {
+	var t time.Time
+	if err := raw.Unmarshal(&t); err != nil {
+		return err
+	}
+	*it = Time(t)
 	return nil
 }
 
