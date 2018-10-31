@@ -359,6 +359,9 @@ type CookieAuthTransport struct {
 	// It's passed in each call to prove the client is authenticated.
 	SessionObject []*http.Cookie
 
+	// Update SessionObject timer
+	Ticker <-chan time.Time
+
 	// Transport is the underlying HTTP transport to use when making requests.
 	// It will default to http.DefaultTransport if nil.
 	Transport http.RoundTripper
@@ -366,6 +369,17 @@ type CookieAuthTransport struct {
 
 // RoundTrip adds the session object to the request.
 func (t *CookieAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.Ticker != nil {
+		select {
+		case <-t.Ticker:
+			err := t.setSessionObject()
+			if err != nil {
+				return nil, errors.Wrap(err, "cookieauth: no session object has been set")
+			}
+		default:
+			// nothing
+		}
+	}
 	if t.SessionObject == nil {
 		err := t.setSessionObject()
 		if err != nil {
