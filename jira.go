@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-querystring/query"
 	"github.com/pkg/errors"
+	"sync"
 )
 
 // A Client manages communication with the JIRA API.
@@ -355,6 +356,7 @@ type CookieAuthTransport struct {
 	Password string
 	AuthURL  string
 
+	sync.RWMutex
 	// SessionObject is the authenticated cookie string.s
 	// It's passed in each call to prove the client is authenticated.
 	SessionObject []*http.Cookie
@@ -372,7 +374,9 @@ func (t *CookieAuthTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	if t.Ticker != nil {
 		select {
 		case <-t.Ticker:
+			t.Lock()
 			err := t.setSessionObject()
+			t.Unlock()
 			if err != nil {
 				return nil, errors.Wrap(err, "cookieauth: no session object has been set")
 			}
@@ -380,11 +384,17 @@ func (t *CookieAuthTransport) RoundTrip(req *http.Request) (*http.Response, erro
 			// nothing
 		}
 	}
+	t.RLock()
 	if t.SessionObject == nil {
+		t.RUnlock()
+		t.Lock()
 		err := t.setSessionObject()
+		t.Unlock()
 		if err != nil {
 			return nil, errors.Wrap(err, "cookieauth: no session object has been set")
 		}
+	} else {
+		t.RUnlock()
 	}
 
 	req2 := cloneRequest(req) // per RoundTripper contract
